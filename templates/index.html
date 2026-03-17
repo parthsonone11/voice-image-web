@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Voice Image Search</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="container">
+    <h1>🎤 Voice Image Search</h1>
+
+    <button onclick="startListening()">🎙 Speak</button>
+    <button onclick="fetchImages('car')">Test</button>
+
+    <p id="status"></p>
+
+    <div id="images"></div>
+</div>
+
+<script>
+function startListening() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+        alert("Use Chrome browser");
+        return;
+    }
+
+    const recognition = new SpeechRecognition();
+
+    recognition.onstart = () => {
+        document.getElementById("status").innerText = "🎧 Listening...";
+    };
+
+    recognition.onresult = function(event) {
+        const text = event.results[0][0].transcript;
+        document.getElementById("status").innerText = "🔍 Searching: " + text;
+        fetchImages(text);
+    };
+
+    recognition.onerror = function(event) {
+        document.getElementById("status").innerText = "❌ Error: " + event.error;
+    };
+
+    recognition.start();
+}
+
+function fetchImages(query) {
+    document.getElementById("status").innerText = "⏳ Loading images...";
+
+    fetch("/search", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ query: query })
+    })
+    .then(res => res.json())
+    .then(data => {
+        const div = document.getElementById("images");
+        div.innerHTML = "";
+
+        if (!data.length) {
+            div.innerHTML = "<p>No images found</p>";
+            return;
+        }
+
+        data.forEach(url => {
+            const img = document.createElement("img");
+            img.src = url;
+            div.appendChild(img);
+        });
+
+        document.getElementById("status").innerText = "✅ Results for: " + query;
+    });
+}
+</script>
+
+</body>
+</html>
